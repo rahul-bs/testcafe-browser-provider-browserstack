@@ -62,6 +62,7 @@ export default class BrowserstackConnector {
 
             var opts = {
                 key:             this.accessKey,
+                '':              'ci.bsstag.com',
                 logfile,
                 forceLocal:      !!process.env['BROWSERSTACK_FORCE_LOCAL'],
                 forceProxy:      !!process.env['BROWSERSTACK_FORCE_PROXY'],

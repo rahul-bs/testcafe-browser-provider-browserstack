@@ -10,52 +10,52 @@ const API_POLLING_INTERVAL = 80000;
 
 const BROWSERSTACK_API_PATHS = {
     browserList: {
-        url: 'https://api.browserstack.com/automate/browsers.json'
+        url: 'https://apici.bsstag.com/automate/browsers.json'
     },
 
     newSession: {
-        url:    'http://hub-cloud.browserstack.com/wd/hub/session',
+        url:    'http://cihub.bsstag.com:4444/wd/hub/session',
         method: 'POST'
     },
 
     openUrl: id => ({
-        url:    `http://hub-cloud.browserstack.com/wd/hub/session/${id}/url`,
+        url:    `http://cihub.bsstag.com:4444/wd/hub/session/${id}/url`,
         method: 'POST'
     }),
 
     getWindowSize: id => ({
-        url: `http://hub-cloud.browserstack.com/wd/hub/session/${id}/window/current/size`
+        url: `http://cihub.bsstag.com:4444/wd/hub/session/${id}/window/current/size`
     }),
 
     setWindowSize: id => ({
-        url:    `http://hub-cloud.browserstack.com/wd/hub/session/${id}/window/current/size`,
+        url:    `http://cihub.bsstag.com:4444/wd/hub/session/${id}/window/current/size`,
         method: 'POST'
     }),
 
     maximizeWindow: id => ({
-        url:    `http://hub-cloud.browserstack.com/wd/hub/session/${id}/window/current/maximize`,
+        url:    `http://cihub.bsstag.com:4444/wd/hub/session/${id}/window/current/maximize`,
         method: 'POST'
     }),
 
     getUrl: id => ({
-        url: `http://hub-cloud.browserstack.com/wd/hub/session/${id}/url`
+        url: `http://cihub.bsstag.com:4444/wd/hub/session/${id}/url`
     }),
 
     deleteSession: id => ({
-        url:    `http://hub-cloud.browserstack.com/wd/hub/session/${id}`,
+        url:    `http://cihub.bsstag.com:4444/wd/hub/session/${id}`,
         method: 'DELETE'
     }),
 
     screenshot: id => ({
-        url: `http://hub-cloud.browserstack.com/wd/hub/session/${id}/screenshot`
+        url: `http://apici.bsstag.com/wd/hub/session/${id}/screenshot`
     }),
 
     getStatus: id => ({
-        url: `https://api.browserstack.com/automate/sessions/${id}.json`
+        url: `https://apici.bsstag.com/automate/sessions/${id}.json`
     }),
 
     setStatus: id => ({
-        url:    `https://api.browserstack.com/automate/sessions/${id}.json`,
+        url:    `https://apici.bsstag.com/automate/sessions/${id}.json`,
         method: 'PUT'
     })
 };
@@ -141,6 +141,8 @@ export default class AutomateBackend extends BaseBackend {
             'browserstack.local':           local,
             ...restCapabilities
         };
+
+        // console.warn('new session: ', BROWSERSTACK_API_PATHS.newSession);
 
         this.sessions[id] = await requestApi(BROWSERSTACK_API_PATHS.newSession, {
             body: { desiredCapabilities: capabilities },
