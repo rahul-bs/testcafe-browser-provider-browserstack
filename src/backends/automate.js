@@ -5,57 +5,69 @@ import BaseBackend from './base';
 import requestApiBase from '../utils/request-api';
 import createBrowserstackStatus from '../utils/create-browserstack-status';
 import * as ERROR_MESSAGES from '../templates/error-messages';
+var fs = require('fs');
+var yaml = require('js-yaml');
+var dirpath = require('path');
 
 const API_POLLING_INTERVAL = 80000;
 
 const BROWSERSTACK_API_PATHS = {
-    browserList: {
-        url: 'https://api.browserstack.com/automate/browsers.json'
-    },
+    // browserList: {
+    //     url: 'https://apici.bsstag.com/automate/browsers.json'
+    // },
 
-    newSession: {
-        url:    'http://hub-cloud.browserstack.com/wd/hub/session',
+    // newSession: {
+    //     url:    'http://cihub.bsstag.com:4444/wd/hub/session',
+    //     method: 'POST'
+    // },
+
+    browserList: id => ({
+        url: 'https://api' + id + '.bsstag.com/automate/browsers.json',
+    }),
+
+    newSession: id => ({
+        url:    'http://' + id + 'hub.bsstag.com:4444/wd/hub/session',
         method: 'POST'
-    },
+    }),
 
     openUrl: id => ({
-        url:    `http://hub-cloud.browserstack.com/wd/hub/session/${id}/url`,
+        url:    `http://${id[1]}hub.bsstag.com:4444/wd/hub/session/${id[0]}/url`,
         method: 'POST'
     }),
 
     getWindowSize: id => ({
-        url: `http://hub-cloud.browserstack.com/wd/hub/session/${id}/window/current/size`
+        url: `http://${id[1]}hub.bsstag.com:4444/wd/hub/session/${id[0]}/window/current/size`
     }),
 
     setWindowSize: id => ({
-        url:    `http://hub-cloud.browserstack.com/wd/hub/session/${id}/window/current/size`,
+        url:    `http://${id[1]}hub.bsstag.com:4444/wd/hub/session/${id[0]}/window/current/size`,
         method: 'POST'
     }),
 
     maximizeWindow: id => ({
-        url:    `http://hub-cloud.browserstack.com/wd/hub/session/${id}/window/current/maximize`,
+        url:    `http://${id[1]}hub.bsstag.com:4444/wd/hub/session/${id[0]}/window/current/maximize`,
         method: 'POST'
     }),
 
     getUrl: id => ({
-        url: `http://hub-cloud.browserstack.com/wd/hub/session/${id}/url`
+        url: `http://${id[1]}hub.bsstag.com:4444/wd/hub/session/${id[0]}/url`
     }),
 
     deleteSession: id => ({
-        url:    `http://hub-cloud.browserstack.com/wd/hub/session/${id}`,
+        url:    `http://cihub.bsstag.com:4444/wd/hub/session/${id[0]}`,
         method: 'DELETE'
     }),
 
     screenshot: id => ({
-        url: `http://hub-cloud.browserstack.com/wd/hub/session/${id}/screenshot`
+        url: `http://api${id[1]}.bsstag.com/wd/hub/session/${id[0]}/screenshot`
     }),
 
     getStatus: id => ({
-        url: `https://api.browserstack.com/automate/sessions/${id}.json`
+        url: `https://api${id[1]}.bsstag.com/automate/sessions/${id[0]}.json`
     }),
 
     setStatus: id => ({
-        url:    `https://api.browserstack.com/automate/sessions/${id}.json`,
+        url:    `https://api${id[1]}.bsstag.com/automate/sessions/${id[0]}.json`,
         method: 'PUT'
     })
 };
@@ -109,22 +121,23 @@ export default class AutomateBackend extends BaseBackend {
     }
 
     async _requestSessionUrl (id) {
-        var sessionInfo = await requestApiBase(BROWSERSTACK_API_PATHS.getStatus(this.sessions[id].sessionId));
+        var sessionInfo = await requestApiBase(BROWSERSTACK_API_PATHS.getStatus([this.sessions[id].sessionId, this.test()]));
 
         return sessionInfo['automation_session']['browser_url'];
     }
 
     async _requestCurrentWindowSize (id) {
-        var currentWindowSizeData = await requestApi(BROWSERSTACK_API_PATHS.getWindowSize(this.sessions[id].sessionId));
+        var currentWindowSizeData = await requestApi(BROWSERSTACK_API_PATHS.getWindowSize([this.sessions[id].sessionId, this.test()]));
 
         return {
+
             width:  currentWindowSizeData.value.width,
             height: currentWindowSizeData.value.height
         };
     }
 
     async getBrowsersList () {
-        var platformsInfo = await requestApiBase(BROWSERSTACK_API_PATHS.browserList);
+        var platformsInfo = await requestApiBase(BROWSERSTACK_API_PATHS.browserList(this.test()));
 
         return platformsInfo.reverse();
     }
@@ -142,7 +155,9 @@ export default class AutomateBackend extends BaseBackend {
             ...restCapabilities
         };
 
-        this.sessions[id] = await requestApi(BROWSERSTACK_API_PATHS.newSession, {
+        // console.warn('new session: ', BROWSERSTACK_API_PATHS.newSession);
+
+        this.sessions[id] = await requestApi(BROWSERSTACK_API_PATHS.newSession(this.test()), {
             body: { desiredCapabilities: capabilities },
 
             executeImmediately: true
@@ -154,9 +169,9 @@ export default class AutomateBackend extends BaseBackend {
 
         var sessionId = this.sessions[id].sessionId;
 
-        this.sessions[id].interval = setInterval(() => requestApi(BROWSERSTACK_API_PATHS.getUrl(sessionId), { executeImmediately: true }), API_POLLING_INTERVAL);
+        this.sessions[id].interval = setInterval(() => requestApi(BROWSERSTACK_API_PATHS.getUrl([sessionId, this.test()]), { executeImmediately: true }), API_POLLING_INTERVAL);
 
-        await requestApi(BROWSERSTACK_API_PATHS.openUrl(sessionId), { body: { url: pageUrl } });
+        await requestApi(BROWSERSTACK_API_PATHS.openUrl([sessionId, this.test()]), { body: { url: pageUrl } });
     }
 
     async closeBrowser (id) {
@@ -171,12 +186,19 @@ export default class AutomateBackend extends BaseBackend {
 
         // Delete session whose sessionId is created
         if (session.sessionId && session.sessionId !== '')
-            await requestApi(BROWSERSTACK_API_PATHS.deleteSession(session.sessionId));
+            await requestApi(BROWSERSTACK_API_PATHS.deleteSession([session.sessionId, this.test()]));
+    }
+
+    test () {
+        var fileContents = fs.readFileSync(dirpath.join(__dirname, '../credentials.yml'), 'utf8');
+        var data = yaml.safeLoad(fileContents);
+
+        return data[process.argv[4]]['hub'];
     }
 
     async takeScreenshot (id, screenshotPath) {
         return new Promise(async (resolve, reject) => {
-            var base64Data = await requestApi(BROWSERSTACK_API_PATHS.screenshot(this.sessions[id].sessionId));
+            var base64Data = await requestApi(BROWSERSTACK_API_PATHS.screenshot([this.sessions[id].sessionId, this.test()]));
             var buffer     = Buffer.from(base64Data.value, 'base64');
 
             jimp
@@ -193,17 +215,17 @@ export default class AutomateBackend extends BaseBackend {
         var requestedSize         = { width, height };
         var correctedSize         = getCorrectedSize(currentClientAreaSize, currentWindowSize, requestedSize);
 
-        await requestApi(BROWSERSTACK_API_PATHS.setWindowSize(sessionId), { body: correctedSize });
+        await requestApi(BROWSERSTACK_API_PATHS.setWindowSize([sessionId, this.test()]), { body: correctedSize });
     }
 
     async maximizeWindow (id) {
-        await requestApi(BROWSERSTACK_API_PATHS.maximizeWindow(this.sessions[id].sessionId));
+        await requestApi(BROWSERSTACK_API_PATHS.maximizeWindow([this.sessions[id].sessionId, this.test()]));
     }
 
     async reportJobResult (id, jobResult, jobData, possibleResults) {
         var sessionId = this.sessions[id].sessionId;
         var jobStatus = createBrowserstackStatus(jobResult, jobData, possibleResults);
 
-        await requestApiBase(BROWSERSTACK_API_PATHS.setStatus(sessionId), { body: jobStatus });
+        await requestApiBase(BROWSERSTACK_API_PATHS.setStatus([sessionId, this.test()]), { body: jobStatus });
     }
 }
