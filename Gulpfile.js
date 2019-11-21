@@ -28,8 +28,11 @@ function lint () {
 }
 
 function build () {
+    gulp.src('src/*.yml')
+  .pipe(gulp.dest('lib'));
+  
     return gulp
-        .src('src/**/*.js')
+        .src(['src/**/*.js'])
         .pipe(babel())
         .pipe(gulp.dest('lib'));
 }
@@ -105,6 +108,7 @@ function testTestcafeAutomate () {
 exports.clean = clean;
 exports.lint  = lint;
 exports.build = gulp.parallel(gulp.series(clean, build), lint);
+// exports.copy = copy
 exports.test  = gulp.series(exports.build, testMochaRest, testMochaAutomate, testTestcafeRest, testTestcafeAutomate);
 exports.testTestcafeRest = gulp.series(exports.build, testTestcafeRest);
 exports.testTestcafeAutomate = gulp.series(exports.build, testTestcafeAutomate);

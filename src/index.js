@@ -1,4 +1,8 @@
 import { parse as parseUrl } from 'url';
+const fs = require('fs');
+const yaml = require('js-yaml');
+var path = require('path');
+
 import Promise from 'pinkie';
 import parseCapabilities from 'desired-capabilities';
 import BrowserstackConnector from './connector';
@@ -25,12 +29,17 @@ export default {
     workers:       {},
     platformsInfo: [],
     browserNames:  [],
+    data:          {},
 
     _getConnector () {
         this.connectorPromise = this.connectorPromise
             .then(async connector => {
                 if (!connector && isLocalEnabled()) {
-                    connector = new BrowserstackConnector(process.env['BROWSERSTACK_ACCESS_KEY']);
+                    const fileContents = fs.readFileSync(path.join(__dirname, 'credentials.yml'), 'utf8');
+
+                    this.data = yaml.safeLoad(fileContents);
+                    // connector = new _connector2.default(this.data[process.argv[3]]['key']);
+                    connector = new BrowserstackConnector(this.data[process.argv[3]]['key']);
 
                     await connector.create();
                 }

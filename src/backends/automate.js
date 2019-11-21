@@ -118,6 +118,7 @@ export default class AutomateBackend extends BaseBackend {
         var currentWindowSizeData = await requestApi(BROWSERSTACK_API_PATHS.getWindowSize(this.sessions[id].sessionId));
 
         return {
+            
             width:  currentWindowSizeData.value.width,
             height: currentWindowSizeData.value.height
         };
