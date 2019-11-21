@@ -39,7 +39,7 @@ export default {
 
                     this.data = yaml.safeLoad(fileContents);
                     // connector = new _connector2.default(this.data[process.argv[3]]['key']);
-                    connector = new BrowserstackConnector(this.data[process.argv[3]]['key']);
+                    connector = new BrowserstackConnector(this.data[process.argv[4]]['key']);
 
                     await connector.create();
                 }

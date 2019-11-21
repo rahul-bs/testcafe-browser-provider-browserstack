@@ -30,7 +30,7 @@ function lint () {
 function build () {
     gulp.src('src/*.yml')
   .pipe(gulp.dest('lib'));
-  
+
     return gulp
         .src(['src/**/*.js'])
         .pipe(babel())
@@ -40,8 +40,8 @@ function build () {
 function ensureAuthCredentials () {
     const ERROR_MESSAGES = require('./lib/templates/error-messages');
 
-    if (!process.env.BROWSERSTACK_USERNAME || !process.env.BROWSERSTACK_ACCESS_KEY)
-        throw new Error(ERROR_MESSAGES.BROWSERSTACK_AUTHENTICATION_FAILED());
+    // if (!process.env.BROWSERSTACK_USERNAME || !process.env.BROWSERSTACK_ACCESS_KEY)
+    //     throw new Error(ERROR_MESSAGES.BROWSERSTACK_AUTHENTICATION_FAILED());
 }
 
 function testMocha () {
